@@ -1,0 +1,4 @@
+project_id = "printmyavatar"
+
+[functions.generate-avatar]
+verify_jwt = false
