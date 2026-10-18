@@ -6,8 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, Mail, Globe } from 'lucide-react';
 import { toast } from 'sonner';
+import { AuthPanel } from '@/components/AuthPanel';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Account() {
+  const { user, signOut } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [language, setLanguage] = useState('en');
@@ -26,6 +29,12 @@ export default function Account() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (user?.email) setEmail(user.email);
+  }, [user?.email]);
+
+  if (!user) return <AuthPanel />;
 
   const handleSave = () => {
     const accountData = { name, email, language };
@@ -74,11 +83,10 @@ export default function Account() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your.email@example.com"
+              readOnly
             />
             <p className="text-xs text-muted-foreground">
-              No authentication required - for contact purposes only
+              Your signed-in Supabase account
             </p>
           </div>
 
@@ -106,6 +114,20 @@ export default function Account() {
 
           <Button onClick={handleSave} className="w-full rounded-full" size="lg">
             Save Changes
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full rounded-full"
+            onClick={async () => {
+              try {
+                await signOut();
+                toast.success('You have been signed out.');
+              } catch {
+                toast.error('Could not sign out. Please try again.');
+              }
+            }}
+          >
+            Sign out
           </Button>
         </div>
 

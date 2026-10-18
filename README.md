@@ -14,6 +14,7 @@ The current app generates images. The 3D model download flow is a placeholder an
 ## Requirements
 
 - Node.js 18 or newer and npm.
+- Deno 2 for the Edge Function unit tests.
 - A Supabase project for the generation Edge Function.
 - A Replicate API token for image generation.
 - The Supabase CLI to deploy the Edge Function.
@@ -57,14 +58,23 @@ The browser calls the `generate-avatar` Supabase Edge Function. The function rea
    supabase link --project-ref YOUR_SUPABASE_PROJECT_REF
    ```
 
-4. In Supabase Dashboard, open **Edge Functions → Secrets** and add `REPLICATE_API_TOKEN` with your Replicate token. Optionally set `REPLICATE_MODEL` to a model compatible with the input format in `supabase/functions/generate-avatar/index.ts`.
-5. Deploy the function:
+4. In Supabase **Authentication → Providers**, enable email/password sign-in. Keep email confirmation enabled for public sign-ups, and add your local and deployed app URLs to **Authentication → URL Configuration**.
+
+5. Apply the server-side quota migration, then add `REPLICATE_API_TOKEN` in **Edge Functions → Secrets**. Optionally set `REPLICATE_MODEL` to a model compatible with the input format in `supabase/functions/generate-avatar/index.ts`.
+
+   ```sh
+   supabase db push
+   ```
+
+   The function uses Supabase's server-provided service key only for the quota RPC. The key must remain in the Edge Function environment and must never be added to a `VITE_` variable.
+
+6. Deploy the function:
 
    ```sh
    supabase functions deploy generate-avatar
    ```
 
-The default function configuration allows unauthenticated calls for this demo. Add authentication and rate limiting before deploying it for public use, so other people cannot spend your Replicate credits. Keep provider secrets in Supabase Edge Function secrets; never commit them or expose them through frontend environment variables.
+The function requires a valid Supabase user session. Its database-backed quota allows at most five generations per user per hour and fifty across the project per UTC day. These limits are enforced before Replicate is called; update the migration if you need different limits. The frontend requires sign-in and uses the user's session token when invoking the function.
 
 ## Customize the app
 
@@ -81,7 +91,11 @@ npm run dev      # Start the local development server
 npm run build    # Build the production web app
 npm run preview  # Preview the production build locally
 npm run lint     # Run ESLint
+npm run check:edge # Type-check the Edge Function
+npm run test:edge # Test request validation, authentication, quotas, and provider calls
 ```
+
+The Edge Function checks require Deno 2. The tests use a fake provider and do not call Replicate or consume credits.
 
 ## Privacy and credentials
 
