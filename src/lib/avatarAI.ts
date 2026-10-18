@@ -5,6 +5,8 @@
 // - Style transfer and customization
 // - Text-based refinement using natural language
 
+import { supabase } from '@/integrations/supabase/client';
+
 export interface AvatarOptions {
   category?: string;
   baseDoll?: string;
@@ -26,6 +28,22 @@ export interface AvatarResult {
   createdAt: Date;
 }
 
+async function requestAvatarGeneration(body: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke('generate-avatar', { body });
+  if (error) {
+    const context = (error as { context?: unknown }).context;
+    if (context instanceof Response) {
+      const responseBody = await context.clone().json().catch(() => null);
+      if (typeof responseBody?.error === 'string') throw new Error(responseBody.error);
+    }
+    throw new Error(error.message || 'Avatar generation failed.');
+  }
+  if (!data || typeof data.imageUrl !== 'string') {
+    throw new Error('The generation service returned an invalid response.');
+  }
+  return data as { imageUrl: string };
+}
+
 /**
  * Process an uploaded photo into a 3D avatar using Replicate's Flux Kontext Pro
  * 
@@ -45,27 +63,11 @@ export async function processAvatar(
     const isMultiplePeople = options.category === 'multiple';
 
     // Call edge function to generate avatar
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-avatar`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageUrl,
-          isMultiplePeople,
-          peopleCount: options.peopleCount,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to generate avatar');
-    }
-
-    const data = await response.json();
+    const data = await requestAvatarGeneration({
+      imageUrl,
+      isMultiplePeople,
+      peopleCount: options.peopleCount,
+    });
     
     return {
       id: `avatar-${Date.now()}`,
@@ -112,28 +114,12 @@ export async function refineAvatar(
     const isMultiplePeople = previousResult.category === 'multiple';
 
     // Call edge function with custom prompt modification
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-avatar`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageUrl: previousResult.imageUrl,
-          isMultiplePeople,
-          customPrompt: textPrompt,
-          peopleCount: previousResult.peopleCount,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to refine avatar');
-    }
-
-    const data = await response.json();
+    const data = await requestAvatarGeneration({
+      imageUrl: previousResult.imageUrl,
+      isMultiplePeople,
+      customPrompt: textPrompt,
+      peopleCount: previousResult.peopleCount,
+    });
     
     return {
       ...previousResult,

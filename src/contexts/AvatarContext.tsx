@@ -32,8 +32,8 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
     const savedHistory = localStorage.getItem('avatarHistory');
     if (savedHistory) {
       try {
-        const parsed = JSON.parse(savedHistory);
-        setHistory(parsed.map((item: any) => ({
+        const parsed = JSON.parse(savedHistory) as AvatarResult[];
+        setHistory(parsed.map((item) => ({
           ...item,
           createdAt: new Date(item.createdAt),
         })));

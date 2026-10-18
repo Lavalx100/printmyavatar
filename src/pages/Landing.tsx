@@ -54,10 +54,9 @@ export default function Landing() {
               </Button>
             </div>
 
-            {/* Prototype Notice */}
             <div className="pt-8">
               <p className="text-sm text-muted-foreground max-w-xl mx-auto px-4 py-3 rounded-lg bg-muted/50 border border-border">
-                📸 <strong>Prototype Note:</strong> This demo simulates the avatar generation process. Your uploaded photo will be displayed as the avatar preview while the actual AI processing is under development.
+                🔒 <strong>Account required:</strong> Sign in before generating. Image generation is available; printable 3D model downloads are still a placeholder.
               </p>
             </div>
           </div>

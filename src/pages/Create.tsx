@@ -23,7 +23,15 @@ export default function Create() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
+      toast.error('Please upload a PNG, JPEG, or WebP image.');
+      return;
+    }
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      toast.error('Please upload a PNG, JPEG, or WebP image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Please choose an image smaller than 5 MB.');
       return;
     }
 
@@ -31,14 +39,13 @@ export default function Create() {
     toast.loading('Generating your avatar...', { id: 'processing' });
 
     try {
-      // MOCK: Process avatar (currently returns same image)
       const result = await processAvatar(file, options);
       setCurrentAvatar(result);
       addToHistory(result);
       toast.success('Avatar generated successfully!', { id: 'processing' });
     } catch (error) {
       console.error('Avatar processing error:', error);
-      toast.error('Failed to generate avatar', { id: 'processing' });
+      toast.error(error instanceof Error ? error.message : 'Failed to generate avatar', { id: 'processing' });
     } finally {
       setIsProcessing(false);
     }
